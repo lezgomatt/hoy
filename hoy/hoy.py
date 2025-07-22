@@ -3,7 +3,7 @@ import subprocess
 import sys
 
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 def main() -> None:
@@ -20,7 +20,7 @@ def main() -> None:
                 f'with title "{title}"',
                 'sound name "Hero"',
             ])
-            subprocess.run(["osascript", "-e", script], check=True)
+            subprocess.run(["osascript", "-e", script], check=True, stdout=subprocess.DEVNULL)
         case "Linux":
             # https://specifications.freedesktop.org/notification-spec/1.3/protocol.html#command-notify
             subprocess.run([
@@ -36,7 +36,7 @@ def main() -> None:
                 "[]", # actions
                 "{'sound-name': <'message'>}", # hints
                 "5000", # expire_timeout
-            ], check=True)
+            ], check=True, stdout=subprocess.DEVNULL)
         case "Windows":
             # https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.notifyicon
             # Escaping: ' -> '' (two single quotes)
@@ -51,7 +51,7 @@ def main() -> None:
                 "$n.Visible = $true;",
                 "$n.ShowBalloonTip(5000);",
             ])
-            subprocess.run(["powershell", "-Command", command], check=True)
+            subprocess.run(["powershell", "-Command", command], check=True, stdout=subprocess.DEVNULL)
         case unknown:
             raise Exception(f"Unknown OS: {unknown}")
 
