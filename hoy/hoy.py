@@ -3,7 +3,10 @@ import subprocess
 import sys
 
 
-def main():
+__version__ = "1.0.0"
+
+
+def main() -> None:
     title = "Hoy!"
     message = sys.argv[1] if len(sys.argv) > 1 else "Task completed"
 
