@@ -1,0 +1,18 @@
+name: Publish on PyPI
+
+on:
+  push:
+    tags: [v*]
+
+permissions:
+  id-token: write # Needed to generate token for trusted publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: pipx install hatch
+    - run: hatch run types:check
+    - run: hatch build
+    - uses: pypa/gh-action-pypi-publish@release/v1
