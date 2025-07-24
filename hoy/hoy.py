@@ -3,12 +3,12 @@ import subprocess
 import sys
 
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 
 def main() -> None:
     title = "Hoy!"
-    message = sys.argv[1] if len(sys.argv) > 1 else "Task completed"
+    message = sys.argv[1] if len(sys.argv) > 1 else "Task completed."
 
     system = platform.system()
     if system == "Darwin":
