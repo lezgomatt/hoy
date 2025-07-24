@@ -11,6 +11,8 @@ Installation
 
 ```bash
 pipx install hoy
+# or
+uv tool install hoy
 ```
 
 

@@ -3,7 +3,7 @@ import subprocess
 import sys
 
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 
 def main() -> None:
@@ -28,9 +28,9 @@ def main() -> None:
             "--dest", "org.freedesktop.Notifications",
             "--object-path", "/org/freedesktop/Notifications",
             "--method", "org.freedesktop.Notifications.Notify",
-            "hoy",
+            "hoy", # app_name
             "0", # replaces_id
-            "dialog-information",
+            "dialog-information", # app_icon
             title, # summary
             message, # body
             "[]", # actions
@@ -47,7 +47,7 @@ def main() -> None:
             f"$n.BalloonTipTitle = '{title}';",
             f"$n.BalloonTipText = '{message}'; ",
             "$n.Icon = [System.Drawing.SystemIcons]::Information;",
-            "$n.BalloonTipIcon = 'Info';", # Or 'None'
+            "$n.BalloonTipIcon = 'Info';",
             "$n.Visible = $true;",
             "$n.ShowBalloonTip(5000);",
         ])
