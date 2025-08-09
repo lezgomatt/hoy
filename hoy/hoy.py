@@ -1,6 +1,7 @@
 import platform
 import subprocess
 import sys
+import typing as t
 
 
 __version__ = "1.0.6"
@@ -15,8 +16,28 @@ def main() -> None:
     except:
         pass
 
-    system = platform.system()
-    if system == "Darwin":
+    system_id = platform.system()
+    if system_id == MacOS.SYSTEM_ID:
+        system = MacOS()
+    elif system_id == Linux.SYSTEM_ID:
+        system = Linux()
+    elif system_id == Windows.SYSTEM_ID:
+        system = Windows()
+    else:
+        raise Exception(f"Unknown OS: {system}")
+
+    system.show_notification(title, message)
+
+
+class SupportedSystem(t.Protocol):
+    def show_notification(self, title: str, message: str) -> None:
+        ...
+
+
+class MacOS(SupportedSystem):
+    SYSTEM_ID = "Darwin"
+
+    def show_notification(self, title: str, message: str) -> None:
         # https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/DisplayNotifications.html
         # Escaping: \ -> \\, " -> \"
         message = message.replace("\\", "\\\\").replace('"', '\\"')
@@ -26,7 +47,12 @@ def main() -> None:
             'sound name "Hero"',
         ])
         subprocess.run(["osascript", "-e", script], check=True, stdout=subprocess.DEVNULL)
-    elif system == "Linux":
+
+
+class Linux(SupportedSystem):
+    SYSTEM_ID = "Linux"
+
+    def show_notification(self, title: str, message: str) -> None:
         # https://specifications.freedesktop.org/notification-spec/1.3/protocol.html#command-notify
         subprocess.run([
             "gdbus", "call", "--session",
@@ -42,7 +68,12 @@ def main() -> None:
             "{'sound-name': <'message'>}", # hints
             "5000", # expire_timeout
         ], check=True, stdout=subprocess.DEVNULL)
-    elif system == "Windows":
+
+
+class Windows(SupportedSystem):
+    SYSTEM_ID = "Windows"
+
+    def show_notification(self, title: str, message: str) -> None:
         # https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.notifyicon
         # Escaping: ' -> '' (two single quotes)
         message = message.replace("'", "''")
@@ -57,8 +88,6 @@ def main() -> None:
             "$n.ShowBalloonTip(5000);",
         ])
         subprocess.run(["powershell", "-Command", command], check=True, stdout=subprocess.DEVNULL)
-    else:
-        raise Exception(f"Unknown OS: {system}")
 
 
 if __name__ == "__main__":
