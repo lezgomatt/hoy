@@ -13,20 +13,23 @@ def main() -> None:
 
     try:
         message = "Task completed successfully." if int(message) == 0 else "Task failed."
-    except:
+    except ValueError:
         pass
 
+    system = determine_system()
+    system.show_notification(title, message)
+
+
+def determine_system() -> "SupportedSystem":
     system_id = platform.system()
     if system_id == MacOS.SYSTEM_ID:
-        system = MacOS()
+        return MacOS()
     elif system_id == Linux.SYSTEM_ID:
-        system = Linux()
+        return Linux()
     elif system_id == Windows.SYSTEM_ID:
-        system = Windows()
+        return Windows()
     else:
-        raise Exception(f"Unknown OS: {system}")
-
-    system.show_notification(title, message)
+        raise Exception(f"Unsupported system: {system_id}")
 
 
 class SupportedSystem(t.Protocol):
