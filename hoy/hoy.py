@@ -1,6 +1,9 @@
+import os
 import platform
+import re
 import subprocess
 import sys
+import tomllib
 import typing as t
 
 
@@ -8,16 +11,52 @@ __version__ = "1.0.6"
 
 
 def main() -> None:
-    title = "Hoy!"
-    message = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Task completed."
+    system = determine_system()
 
     try:
-        message = "Task completed successfully." if int(message) == 0 else "Task failed."
-    except ValueError:
-        pass
+        with open(f"{system.get_config_dir()}/hoy.toml") as config_file:
+            config = tomllib.load(config_file)
+    except FileNotFoundError:
+        config = {}
 
-    system = determine_system()
-    system.show_notification(title, message)
+    channels, args = extract_channels(sys.argv[1:])
+    if not channels:
+        channels = config.get("default_channels") or ["default"]
+
+    for ch in channels:
+        ch_config = config.get("channels", {}).get(ch, {})
+        title = ch_config.get("title", "Hoy!")
+        default_message = ch_config.get("default_message", "Task completed.")
+        success_message = ch_config.get("success_message", "Task completed successfully.")
+        failure_message = ch_config.get("failure_message", "Task failed.")
+
+        message = " ".join(args) if len(args) > 0 else default_message
+        try:
+            message = success_message if int(message) == 0 else failure_message
+        except ValueError:
+            pass
+
+        system.show_notification(title, message)
+
+
+def extract_channels(args: list[str]):
+    """Zero or more channels can be specified at the start or end, but not in the middle."""
+
+    channels = []
+
+    for arg in args:
+        if (m := re.match(r"@([A-Za-z0-9_\-]+)", arg)) is not None:
+            channels.append(m[1])
+        else:
+            break
+
+    remaining_args = args[len(channels):]
+
+    while len(args) > 0 and (m := re.match(r"@([A-Za-z0-9_\-]+)", args[-1])) is not None:
+        args.pop()
+        channels.append(m[1])
+
+    return channels, remaining_args
 
 
 def determine_system() -> "SupportedSystem":
@@ -33,12 +72,18 @@ def determine_system() -> "SupportedSystem":
 
 
 class SupportedSystem(t.Protocol):
+    def get_config_dir(self) -> str:
+        ...
+
     def show_notification(self, title: str, message: str) -> None:
         ...
 
 
 class MacOS(SupportedSystem):
     SYSTEM_ID = "Darwin"
+
+    def get_config_dir(self) -> str:
+        return os.path.expanduser("~/Library/Application Support/hoy")
 
     def show_notification(self, title: str, message: str) -> None:
         # https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/DisplayNotifications.html
@@ -54,6 +99,11 @@ class MacOS(SupportedSystem):
 
 class Linux(SupportedSystem):
     SYSTEM_ID = "Linux"
+
+    def get_config_dir(self) -> str:
+        config_home = os.getenv("XDG_CONFIG_HOME", "~/.config/")
+
+        return os.path.expanduser(f"{config_home}/hoy")
 
     def show_notification(self, title: str, message: str) -> None:
         # https://specifications.freedesktop.org/notification-spec/1.3/protocol.html#command-notify
@@ -75,6 +125,9 @@ class Linux(SupportedSystem):
 
 class Windows(SupportedSystem):
     SYSTEM_ID = "Windows"
+
+    def get_config_dir(self) -> str:
+        return os.path.expandvars(r"%APPDATA%\hoy")
 
     def show_notification(self, title: str, message: str) -> None:
         # https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.notifyicon
