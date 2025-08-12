@@ -16,7 +16,7 @@ classifiers = [
   "Topic :: Utilities",
   "Typing :: Typed",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = []
 
 [project.urls]
@@ -41,5 +41,5 @@ extra-dependencies = ["mypy>=1.0.0"]
 check = "mypy --install-types --non-interactive {args:hoy/}"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 strict = true

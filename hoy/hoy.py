@@ -14,7 +14,7 @@ def main() -> None:
     system = determine_system()
 
     try:
-        with open(f"{system.get_config_dir()}/hoy.toml") as config_file:
+        with open(f"{system.get_config_dir()}/hoy.toml", "rb") as config_file:
             config = tomllib.load(config_file)
     except FileNotFoundError:
         config = {}
@@ -36,10 +36,15 @@ def main() -> None:
         except ValueError:
             pass
 
-        system.show_notification(title, message)
+        type = ch_config.get("type", "system")
+        if type == "system":
+            sound_name = ch_config.get("sound_name")
+            system.show_notification(title, message, sound_name)
+        else:
+            raise Exception(f"Unsupported channel type: {type}")
 
 
-def extract_channels(args: list[str]):
+def extract_channels(args: list[str]) -> tuple[list[str], list[str]]:
     """Zero or more channels can be specified at the start or end, but not in the middle."""
 
     channels = []
@@ -75,7 +80,7 @@ class SupportedSystem(t.Protocol):
     def get_config_dir(self) -> str:
         ...
 
-    def show_notification(self, title: str, message: str) -> None:
+    def show_notification(self, title: str, message: str, sound_name: str|None = None) -> None:
         ...
 
 
@@ -85,14 +90,14 @@ class MacOS(SupportedSystem):
     def get_config_dir(self) -> str:
         return os.path.expanduser("~/Library/Application Support/hoy")
 
-    def show_notification(self, title: str, message: str) -> None:
+    def show_notification(self, title: str, message: str, sound_name: str|None = None) -> None:
         # https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/DisplayNotifications.html
         # Escaping: \ -> \\, " -> \"
         message = message.replace("\\", "\\\\").replace('"', '\\"')
         script = " ".join([
             f'display notification "{message}"',
             f'with title "{title}"',
-            'sound name "Hero"',
+            f'sound name "{sound_name or "Hero"}"',
         ])
         subprocess.run(["osascript", "-e", script], check=True, stdout=subprocess.DEVNULL)
 
@@ -105,7 +110,7 @@ class Linux(SupportedSystem):
 
         return os.path.expanduser(f"{config_home}/hoy")
 
-    def show_notification(self, title: str, message: str) -> None:
+    def show_notification(self, title: str, message: str, sound_name: str|None = None) -> None:
         # https://specifications.freedesktop.org/notification-spec/1.3/protocol.html#command-notify
         subprocess.run([
             "gdbus", "call", "--session",
@@ -118,7 +123,7 @@ class Linux(SupportedSystem):
             title, # summary
             message, # body
             "[]", # actions
-            "{'sound-name': <'message'>}", # hints
+            f"{'sound-name': <'{sound_name or "message"}'>}", # hints
             "5000", # expire_timeout
         ], check=True, stdout=subprocess.DEVNULL)
 
@@ -129,7 +134,7 @@ class Windows(SupportedSystem):
     def get_config_dir(self) -> str:
         return os.path.expandvars(r"%APPDATA%\hoy")
 
-    def show_notification(self, title: str, message: str) -> None:
+    def show_notification(self, title: str, message: str, sound_name: str|None = None) -> None:
         # https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.notifyicon
         # Escaping: ' -> '' (two single quotes)
         message = message.replace("'", "''")
