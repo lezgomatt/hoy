@@ -36,12 +36,12 @@ def main() -> None:
         except ValueError:
             pass
 
-        type = ch_config.get("type", "system")
-        if type == "system":
-            sound_name = ch_config.get("sound_name")
-            system.show_notification(title, message, sound_name)
-        else:
-            raise Exception(f"Unsupported channel type: {type}")
+        match ch_config.get("type", "system"):
+            case "system":
+                sound_name = ch_config.get("sound_name")
+                system.show_notification(title, message, sound_name)
+            case unsupported:
+                raise Exception(f"Unsupported channel type: {unsupported}")
 
 
 def extract_channels(args: list[str]) -> tuple[list[str], list[str]]:
@@ -65,15 +65,15 @@ def extract_channels(args: list[str]) -> tuple[list[str], list[str]]:
 
 
 def determine_system() -> "SupportedSystem":
-    system_id = platform.system()
-    if system_id == MacOS.SYSTEM_ID:
-        return MacOS()
-    elif system_id == Linux.SYSTEM_ID:
-        return Linux()
-    elif system_id == Windows.SYSTEM_ID:
-        return Windows()
-    else:
-        raise Exception(f"Unsupported system: {system_id}")
+    match platform.system():
+        case "Darwin":
+            return MacOS()
+        case "Linux":
+            return Linux()
+        case "Windows":
+            return Windows()
+        case unsupported:
+            raise Exception(f"Unsupported system: {unsupported}")
 
 
 class SupportedSystem(t.Protocol):
@@ -85,8 +85,6 @@ class SupportedSystem(t.Protocol):
 
 
 class MacOS(SupportedSystem):
-    SYSTEM_ID = "Darwin"
-
     def get_config_dir(self) -> str:
         return os.path.expanduser("~/Library/Application Support/hoy")
 
@@ -103,8 +101,6 @@ class MacOS(SupportedSystem):
 
 
 class Linux(SupportedSystem):
-    SYSTEM_ID = "Linux"
-
     def get_config_dir(self) -> str:
         config_home = os.getenv("XDG_CONFIG_HOME", "~/.config/")
 
@@ -129,8 +125,6 @@ class Linux(SupportedSystem):
 
 
 class Windows(SupportedSystem):
-    SYSTEM_ID = "Windows"
-
     def get_config_dir(self) -> str:
         return os.path.expandvars(r"%APPDATA%\hoy")
 
