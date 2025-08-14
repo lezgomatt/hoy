@@ -40,6 +40,12 @@ def main() -> None:
             case "system":
                 sound_name = ch_config.get("sound_name")
                 system.show_notification(title, message, sound_name)
+            case "shell":
+                command = ch_config["command"]
+                env = os.environ.copy()
+                env["HOY_TITLE"] = title
+                env["HOY_MESSAGE"] = message
+                subprocess.run(command, shell=True, check=True, env=env)
             case unsupported:
                 raise Exception(f"Unsupported channel type: {unsupported}")
 
